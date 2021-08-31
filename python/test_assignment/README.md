@@ -11,7 +11,7 @@ no problem with the programming for ASTR 257.
  ## Test assignment
 
 1. Open the file test.fits in Python.  
-2. Crop a 100x100 pixel region around the brightest star in the image.  
+2. Crop a 40x40 pixel region around the brightest star in the image.  
 3. Save the cropped region as test2.fits.
 4. Use the code *photutils* to measure the centroid of this star in the uncropped region
 
