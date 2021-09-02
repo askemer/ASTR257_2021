@@ -17,6 +17,15 @@ no problem with the programming for ASTR 257.
 
 If you can’t do this problem, or would just like some more practice, 
 we’ve compiled some tutorials below.
+
+To submit your assignment, do:
+
+1. Create a branch on this Repo (you should not fork it;  you have write access)
+2. Add a folder named after you (e.g. *profx*) under student_work/
+3. Add your code/notebook in there
+
+Thanks!
+
 # Basic Python for Astronomy
 
 There is a lab class at Amherst College that begins with an excellent set of Python tutorials:
