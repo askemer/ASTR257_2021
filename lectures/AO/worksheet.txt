@@ -1,0 +1,21 @@
+The goal of this experiment is to measure the angular diameter of Pluto and the angular separation of Pluto and its moon Charon.  Arcseconds are the appropriate unit for angular separation.  
+
+1) In your own words, describe “resolution”
+
+2) What is the approximate angular diameter of Pluto and the approximate angular separation of Pluto and Charon?  Both of these quantities change with time, but look up approximate values so you can plan your observation.
+
+3) What is the wavelength range of ShARCS, the infrared camera behind Shane-AO?
+
+4) What is the resolution of ShARCS at its shortest and longest wavelengths, assuming Shane-AO makes a perfect diffraction limited image?
+
+5) At what wavelength can Shane-AO resolve Pluto’s angular diameter, assuming Shane-AO makes a perfect diffraction limited image?
+
+6) At what wavelength can Shane-AO resolve Pluto-Charon, assuming Shane-AO makes a perfect diffraction limited image?
+
+7) What wavelength do you propose to use for your observations and why?
+
+8) What is the plate scale of ShARCS? Plate scale is a conversion between number of pixels and arc seconds.
+
+9) How many pixels do you expect Pluto will be on ShARCS?
+
+10) How many pixels do you expect separate Pluto and Charon on ShARCS?
