@@ -143,12 +143,12 @@ def make_science_image(science_image_path, bias_image, dark_image, flat_image, w
     """
 
     super_science = median_combine(science_image_path)
-
-    science_exp_time = fits.getheader(glob.glob(science_image_path)[0])['EXPTIME']
     super_science_subtracted = super_science - bias_image
     
+    science_exp_time = fits.getheader(glob.glob(science_image_path)[0])['EXPTIME']
+    super_science_per_second = super_science_subtracted/science_exp_time
 
-    reduced_science = (super_science_subtracted - dark_image)/flat_image
+    reduced_science = (super_science_per_second - dark_image)/flat_image
 
     if writeout is not None:
         hdu_list = fits.HDUList([fits.PrimaryHDU(reduced_science)])
