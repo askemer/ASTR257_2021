@@ -11,12 +11,8 @@ from photutils import centroid_1dg, centroid_2dg
 
 ## -- FUNCTIONS
 
-def calibrate_data(biases='./biases/d*.fits', darks='./darks/night/d*.fits', 
-                   flats='./dome_flats/d*fits', science='./science/d*.fits',
-                   writeout='final_pluto.fits', plot='final_pluto.png'):
+def calibrate_data(biases, darks, flats, science, writeout, plot):
     """ Main function to calibrate data from start to finish. 
-    Note that with the default paths this is meant to run in a particuarly
-    data directory structure. Future iterations will probably change that.
 
     Parameters
     ----------
@@ -40,8 +36,8 @@ def calibrate_data(biases='./biases/d*.fits', darks='./darks/night/d*.fits',
     """
 
     bias_image = make_bias(biases)
-    dark_image = make_dark(darks, bias_image, writeout='dark.fits')
-    flat_image = make_flat(flats, dark_image, writeout='flat.fits')
+    dark_image = make_dark(darks, bias_image)
+    flat_image = make_flat(flats, dark_image)
     science_image = make_science_image(science, bias_image, dark_image, 
             flat_image, writeout=writeout, plot=plot)
 
@@ -83,7 +79,7 @@ def make_dark(dark_path, bias_image, writeout=None):
     return super_dark_per_second
 
 
-def make_flat(flat_path, dark_image, norm_to_1=True, writeout=None):
+def make_flat(flat_path, dark_image, writeout=None):
     """ Builds the dark subtracted flat image. 
 
     Parameters
@@ -92,8 +88,6 @@ def make_flat(flat_path, dark_image, norm_to_1=True, writeout=None):
         Glob-able path to the flat fits files.
     dark_image : np.array
         Super diark in numpy array form.
-    norm_to_1: bool
-        Whether or not to normalize the flat to 1.
     writeout : str or None
         Name of the fits file to write out, if at all.
 
@@ -102,14 +96,8 @@ def make_flat(flat_path, dark_image, norm_to_1=True, writeout=None):
     flat : np.array
         Array of dark subtracted and time averaged flat data.
     """
-    super_flat = weighted_median_combine(flat_path)
-    super_flat_subtracted = super_flat - dark_image
-
-    if norm_to_1:
-        sigma_max = np.max(sigma_clip(super_flat_subtracted, masked=False, axis=None))
-        flat = super_flat_subtracted/sigma_max
-    else:
-        flat = super_flat_subtracted
+   
+    flat = median_combine(flat_path, norm_to_exposure=True, norm_to_1=True, subtract=dark_image)
 
     if writeout is not None:
         hdu_list = fits.HDUList([fits.PrimaryHDU(flat)])
@@ -155,6 +143,7 @@ def make_science_image(science_image_path, bias_image, dark_image, flat_image, w
         hdu_list.writeto(writeout, overwrite=True)
 
     if plot is not None:
+        plt.clf()
         plt.imshow(reduced_science,
                 vmin=np.median(reduced_science)-3*np.std(reduced_science),
                 vmax=np.median(reduced_science)+3*np.std(reduced_science),
@@ -164,13 +153,20 @@ def make_science_image(science_image_path, bias_image, dark_image, flat_image, w
     return reduced_science
 
 
-def median_combine(path):
-    """ Median combines a given set of images.
+def median_combine(path, norm_to_exposure=False, norm_to_1=False, subtract=None):
+    """ Median combines a given set of images. Some boolean flags because flats
+    are complicated.
     
     Parameters
     ----------
     path : str
         Glob-able path of files.
+    norm_to_exposure : bool
+        Whether or not to normalize by exposure time before median combining. 
+    norm_to_1 : bool
+        Whether or not to normalize to 1 before median combining.
+    subtract : np.array or None
+        Dark to subtract off before combining, or None.
 
     Returns
     -------
@@ -183,7 +179,18 @@ def median_combine(path):
     
     cube = np.zeros((size[0], size[1], len(files)))
     for index, fits_file in enumerate(files):
-        cube[:, :, index] = fits.getdata(fits_file)
+
+        with fits.open(fits_file) as hdu:
+            data = hdu[0].data
+            exp_time = hdu[0].header['EXPTIME']
+
+        # Extra fiddling according to flags
+        data = data/exp_time if norm_to_exposure else data
+        data = data - subtract if subtract is not None else data
+        sigma_max = np.max(sigma_clip(data, masked=False, axis=None))
+        data = data/sigma_max if norm_to_1 else data
+        
+        cube[:, :, index] = data
 
     median = np.median(cube, axis=2)
 
@@ -192,6 +199,7 @@ def median_combine(path):
 
 def weighted_median_combine(path):
     """ Median combines a given set of images and weights them by their exposure time.
+    This may be irrelevant now  but leaving it jic.
 
     Parameters
     ----------
@@ -217,6 +225,39 @@ def weighted_median_combine(path):
     median = np.median(cube, axis=2)
     return median
 
+## -- pluto centroid night 1 falls at (496.90183365, 487.08766776)
+
 ## -- RUN
 if __name__ == "__main__":
-    calibrate_data()
+    
+    # for pluto
+    calibrate_data(biases='./pluto_data/biases/d*.fits', darks='./pluto_data/darks/night/d*.fits', 
+                   flats='./pluto_data/sky_flats/d*fits', science='./pluto_data/science/d*.fits',
+                   writeout='skyflats_pluto.fits', plot='skyflats_pluto.png')
+
+    calibrate_data(biases='./pluto_data/biases/d*.fits', darks='./pluto_data/darks/night/d*.fits', 
+                   flats='./pluto_data/dome_flats/d*fits', science='./pluto_data/science/d*.fits',
+                   writeout='domeflats_pluto.fits', plot='domeflats_pluto.png')
+    
+    # for HR 
+    # landolt B
+    calibrate_data(biases='./hr_data/biases/d*.fits', darks='./hr_data/darks/d*.fits', 
+                   flats='./hr_data/dome_flats/B_band/d*fits', science='./hr_data/science/landolt_B/d*.fits',
+                   writeout='final_landolt_B.fits', plot='final_landolt_B.png')
+    
+    # landolt V
+    calibrate_data(biases='./hr_data/biases/d*.fits', darks='./hr_data/darks/d*.fits', 
+                   flats='./hr_data/dome_flats/V_band/d*fits', science='./hr_data/science/landolt_V/d*.fits',
+                   writeout='final_landolt_V.fits', plot='final_landolt_V.png')
+    
+    # ngc B
+    calibrate_data(biases='./hr_data/biases/d*.fits', darks='./hr_data/darks/d*.fits', 
+                   flats='./hr_data/dome_flats/B_band/d*fits',
+                   science='./hr_data/science/6819_B/d*.fits',
+                   writeout='final_ngc6819_B.fits', plot='final_ngc6819_B.png')
+    
+    # ngc V
+    calibrate_data(biases='./hr_data/biases/d*.fits', darks='./hr_data/darks/d*.fits', 
+                   flats='./hr_data/dome_flats/V_band/d*fits',
+                   science='./hr_data/science/6819_V/d*.fits',
+                   writeout='final_ngc6819_V.fits', plot='final_ngc6819_V.png')
